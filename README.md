@@ -1,143 +1,199 @@
-# Judge — 页面性能体检 Chrome 扩展
+<div align="center">
 
-给同事装上,**打开慢页面 → 点一下扩展图标 → 复制摘要到工单**。
+# Judge — 页面性能体检
 
-## 核心能力
+**让"系统好慢啊"变成一份开发同学能立刻定位的诊断报告**
 
-### 1. 前端静态 / 后端接口 分开统计
-- 前端静态:`script` / `css` / `img` / `font` / `media`
-- 后端接口:`fetch` / `xhr`
-- 分别显示数量、传输体积、总耗时
+Chrome 扩展 · 完全免费 · 零数据上传 · [安装指南](#安装) · [隐私政策](https://kary2999.github.io/WebJudge/docs/store/privacy-policy.html)
 
-### 2. 慢接口排名(>1s,耗时倒序)
-每条接口标明慢的原因:
+</div>
 
-| 标签 | 含义 |
-|---|---|
-| `后端慢` | server time / duration > 70% — 后端 SQL/缓存问题 |
-| `被浏览器排队` | 同域 ≥6 个并发 + queue 时间大 — 前端问题 |
-| `前端开销` | 后端 `extend.runtime` 快但实测慢 — 浏览器网络/JS 问题 |
-| `下载耗时` | 传输占 duration > 50% — 资源太大 |
-| `综合` | 都沾一点 |
+---
 
-### 3. 捕获后端响应 & extend.runtime 对账
-在主世界 hook 了 `fetch` 和 `XMLHttpRequest`,对每个接口都解析响应体:
+## 解决什么问题
 
-```json
-{
-  "extend": {
-    "date": "2026-04-18 01:38:10",
-    "unique": "69e27002b031d120218672",
-    "runtime": "171.62 ms"
-  }
-}
-```
+> 同事说"后台好卡"，开发问"哪个接口慢？网络还是后端？" 同事说"不知道"。
+> 
+> 工单挂了三天没人领。
 
-计算 `Δ = 前端实测 - 后端 runtime`:
-- `Δ > 300ms` → 进"runtime 失配"表 — 后端自报快、前端慢、差距来自**网络 + 浏览器队列 + 前端 JS**
-- 可根据 `extend.unique` 直接到后端日志里对应链路
+**Judge 就是为了干掉这种低效沟通。**
 
-### 4. 状态异常接口(status ≠ 2xx)
-独立一张表,**优先修**。包含:
-- HTTP method / status / statusText
-- `extend.runtime` / `extend.unique`
-- 响应体片段(前 400 字符)
+装上扩展 → 打开慢页面 → 点一下图标 → 自动生成带数据的诊断报告 → 发给开发。
 
-### 5. Web Vitals
-LCP / FCP / CLS / INP / TTFB / Long Tasks — 遵循 Google 门槛着色
+---
 
-### 6. 导出
-- **复制摘要** → 粘贴到工单 / 群聊(纯文本)
-- **下载 JSON** → 完整报告含所有慢接口/失败接口的响应体、extend、时序数据
-- **导出 PDF** → 报告页调浏览器打印,在弹窗里选"另存为 PDF"
+## 你一定遇到过这些场景
+
+| 痛点 | 现状 | 装了 Judge 之后 |
+|---|---|---|
+| **"系统好慢啊"** | 开发无法复现，不知道慢在哪 | 报告直接列出慢接口 Top N + 耗时 |
+| **前端后端互相甩锅** | "接口 2 秒" / "我日志才 50ms" | 自动归因：后端慢 / 网络差 / 浏览器排队 |
+| **HTTP 200 但页面白屏** | 监控没告警，状态码都是 200 | 自动检测 JSON 业务状态码异常 |
+| **"我也不知道点了什么就卡了"** | 来回沟通 5 轮才定位操作路径 | 自动记录最近 30 次操作轨迹 |
+| **用户网差却说系统有问题** | 排查半天发现是 VPN 只有 0.5Mbps | 网络环境 0-100 评分，客观判定 |
+| **让非技术人员开 F12？** | "什么是 F12？" | 点一下图标就行，不用 DevTools |
+
+---
+
+## 核心功能
+
+### 诊断分析
+- **慢接口 Top N 排名** — 按耗时倒序，每条标注原因
+- **5 类归因标签** — `后端慢` / `网络拥塞` / `首次连接` / `浏览器排队` / `响应过大`
+- **前后端责任判定** — Resource Timing + 服务端 extend.runtime 交叉验证
+
+### 异常检测
+- **业务层失败** — HTTP 200 但 JSON biz.status 异常，自动识别
+- **HTTP 状态异常** — 4xx / 5xx / 超时，含响应体片段
+- **JS 运行时异常** — window.onerror + unhandledrejection + 资源加载失败
+
+### 环境评估
+- **网络评分 0-100** — 综合带宽 / RTT / 丢包的客观分数
+- **Web Vitals** — LCP / FCP / CLS / INP / TTFB，好 / 中 / 差三档
+- **域名 Ping 实测** — 对每个 API 域名发探测请求，测实际 RTT
+
+### 行为追踪
+- **用户操作轨迹** — 最近 30 次点击 / 输入 / 路由跳转（不记录密码）
+- **iframe 支持** — 后台管理系统多框架数据自动合并
+
+### 报告导出
+- **一键 PDF** — 带 IP 水印的完整诊断报告，直接粘到工单
+- **复制摘要** — 纯文本摘要，粘到群聊或 IM
+- **完整网页报告** — 可交互的详情页，支持点击展开响应体
+- **被动 Badge** — 页面出现异常时图标自动亮红 / 琥珀角标
+
+---
 
 ## 安装
 
-1. `chrome://extensions/`
-2. 右上角开启"开发者模式"
-3. 点"加载已解压的扩展程序"
-4. 选目录 `/Users/admin/Desktop/work/Code/Tool/Judge`
+### 方式一：Chrome Web Store（审核中）
 
-## 使用流程
+上架后直接搜索 **"Judge 页面性能体检"** 安装。
 
-1. 打开要分析的页面(**刷新一次**让扩展能采集完整时序)
-2. 页面做你觉得慢的操作(点按钮、切 tab 等)
-3. 点工具栏上 Judge 图标
-4. popup 里看概览;点"生成完整报告"打开详情页
-5. 详情页有 3 个导出按钮
+### 方式二：本地加载（开发者模式）
 
-## 目录结构
+1. [下载最新 ZIP](https://github.com/kary2999/WebJudge/raw/main/dist/judge-latest.zip) 并解压
+2. 打开 Chrome → 地址栏输入 `chrome://extensions/`
+3. 右上角开启 **开发者模式**
+4. 点 **加载已解压的扩展程序** → 选解压后的文件夹
+5. 完成！工具栏出现 Judge 图标
+
+---
+
+## 使用方法
 
 ```
-Judge/
-  manifest.json      # MV3 清单,双 content script
-  inject.js          # MAIN world:hook fetch/XHR,捕获响应体和 extend
-  content.js         # 隔离 world:Vitals + 关联分析 + 生成报告
-  background.js      # 打开报告页时做 payload 中转
-  popup.html/css/js  # 弹窗 UI
-  report.html/css/js # 完整报告页 (含 @media print 样式支持导出 PDF)
-  icons/
-  README.md
+3 步出报告：
+
+  1. 打开慢页面，F5 刷新一次
+  2. 正常操作，复现卡顿
+  3. 点工具栏 Judge 图标 → 看诊断 / 下载 PDF
 ```
 
-## 数据流
+---
+
+## 技术架构
 
 ```
 页面 JS 发请求
       ↓
-inject.js (MAIN)  ← hook fetch/XHR,读响应体
-      ↓  CustomEvent
-content.js (isolated)  ← 收集 + 和 Resource Timing 关联
+inject.js (MAIN world)    ← hook fetch/XHR，捕获响应体 + extend 字段
+      ↓ CustomEvent
+content.js (isolated)     ← 收集 Vitals + 操作轨迹 + JS 异常
       ↓
-Performance API (Vitals / Resource Timing)
+analyzer.js               ← 多 frame 合并 + 时序分析 + 5 类归因
       ↓
-popup.js / report.js  → JSON / PDF / 剪贴板
+popup.js / report.js      → PDF / 摘要 / 完整报告
 ```
 
-## 核心算法:区分"真慢" vs "被前端排队" vs "前端开销"
+### 慢接口归因算法
 
 ```
-if 后端 runtime 已知 and Δ > 300ms and Δ > 后端 runtime:
-    同源并发 ≥ 6 且 queue 大 → browser-queue
-    否则                      → frontend-overhead
-elif 同源并发 ≥ 6 且 queue - (DNS+TCP+SSL) > 100ms:
-    → browser-queue
+if 后端 runtime 已知 and Δ > 300ms:
+    同源并发 ≥ 6 且 queue 大 → 浏览器排队
+    否则                      → 前端开销
+elif 同源并发 ≥ 6 且 queue > 100ms:
+    → 浏览器排队
 elif server time / duration > 70%:
-    → backend-slow
+    → 后端慢
 elif download time / duration > 50%:
-    → download-heavy
+    → 响应过大
 else:
-    → mixed
+    → 综合因素
 ```
+
+---
 
 ## 权限说明
 
 | 权限 | 用途 |
 |---|---|
-| `activeTab` | 读当前标签页的 Performance API |
-| `scripting` | 兜底注入 content.js |
-| `storage` | 弹窗 → 报告页传递 payload |
-| `clipboardWrite` | "复制摘要" |
-| `downloads` | "下载 JSON" |
-| `host_permissions: <all_urls>` | content_script 匹配所有站点 |
+| `activeTab` | 点击图标时读当前页 Performance API |
+| `scripting` | 注入分析脚本到所有 frame |
+| `storage` | 弹窗 → 报告页传递数据（1 小时自动清理） |
+| `clipboardWrite` | "复制摘要"按钮 |
+| `downloads` | "下载 PDF/JSON"按钮 |
+| `<all_urls>` | 用户可能在任意网站使用 |
 
-**不使用** `webRequest`,不做任何外部上报,所有分析在本地完成。
+**不使用的权限**：❌ webRequest · ❌ cookies · ❌ history · ❌ tabs
 
-## 限制
+---
 
-- 跨域无 `Timing-Allow-Origin` 头的资源:`duration` 为 0(忽略)
-- 响应体捕获上限 64KB,超出截断;报告里只保留前 4000 字符
-- `INP` 需真实交互过才有值
-- 纯 `<script>`/`<img>` 初始化的资源不经过 fetch/XHR,不会有 `extend` 解析
-- Service Worker 拦截的请求:`transferSize=0` 正常;inject.js 仍能拿响应体
+## 隐私承诺
 
-## 版本
+- 所有分析在浏览器本地完成
+- **不向任何服务器发送数据**
+- 不读 cookie / localStorage / 密码框
+- 关闭标签页数据立即释放
+- 没有任何埋点或遥测
+- 代码完全开源可审查
+- Manifest V3 沙箱化运行
 
-- v0.2.0 (2026-04-18)
-  - 新增:前后端分类
-  - 新增:fetch/XHR hook 捕获响应体与 `extend` 字段
-  - 新增:runtime 失配检测(后端报时 vs 前端实测)
-  - 新增:状态异常接口独立表
-  - 新增:PDF 导出 + 打印友好样式
-  - 重命名:Perf Inspector → Judge
-- v0.1.0 - 基础 Web Vitals + 慢接口排名 + 浏览器排队检测
+唯一外部请求：生成 PDF 时可选查询公网 IP（用于水印），失败则跳过。
+
+[查看完整隐私政策 →](https://kary2999.github.io/WebJudge/docs/store/privacy-policy.html)
+
+---
+
+## 项目结构
+
+```
+Judge/
+├── manifest.json        # MV3 清单
+├── inject.js            # MAIN world：hook fetch/XHR
+├── content.js           # 隔离 world：Vitals + 轨迹 + 异常
+├── analyzer.js          # 核心分析引擎
+├── background.js        # Badge 计数 + 报告页中转
+├── popup.html/css/js    # 弹窗 UI
+├── report.html/css/js   # 完整报告页
+├── pdf.js               # Canvas → PDF 渲染器
+├── pdf-report.js        # PDF 报告内容构建
+├── tokens.css           # Indigo 设计令牌
+├── icons/               # 扩展图标
+├── dist/                # 历史构建包
+└── docs/                # 文档 + 商店素材
+```
+
+---
+
+## 版本历史
+
+| 版本 | 更新内容 |
+|---|---|
+| **v0.10.1** | HTTP 异常 + runtime 失配展开为完整详情（含响应体） |
+| **v0.10.0** | Indigo 视觉重构 + Badge 被动告警 + 域名 Ping 实测 |
+| **v0.9.0** | 用户操作轨迹 + JS 异常捕获 + iframe 多框架支持 |
+| **v0.8.1** | 5 类慢接口归因 + 网络评分 0-100 + 一键 PDF 导出 |
+
+---
+
+## 联系
+
+- **邮箱**：kary372022@gmail.com
+- **Issues**：[GitHub Issues](https://github.com/kary2999/WebJudge/issues)
+
+---
+
+<div align="center">
+<sub>Judge 是个独立维护的小项目，不收集你任何数据，只是想让"系统好慢啊"这种工单变得可定位。</sub>
+</div>
