@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Judge 页面性能体检",
+  "version": "0.10.1",
+  "description": "页面性能体检 0.10.1:HTTP 状态异常 + runtime 失配 PDF 展开为完整详情(含响应体),不再是单行表格。",
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "页面性能体检"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["report.html", "tokens.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>页面性能体检</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-inner">
+      <header>
+        <h1><span class="logo">J</span><span>性能体检</span></h1>
+        <button id="refresh" title="重新采样">↻</button>
+      </header>
+
+      <!-- B 档:打开时若后台累积过异常,这里高亮提示一句 -->
+      <div id="alertPill" class="alert-pill">
+        <span class="dot"></span>
+        <span id="alertText"></span>
+      </div>
+
+      <section id="networkCard" class="card">
+        <h2>
+          <span>用户网络</span>
+          <span class="actions">
+            <button id="probeBtn" class="tiny-btn" title="对当前域发起 6 次小请求,实测 RTT">实测 RTT</button>
+            <button id="probeDomainsBtn" class="tiny-btn" title="对页面用到的每个 API 域名做 ping(每域 3 次)">实测各域名</button>
+          </span>
+        </h2>
+        <div id="netSummary" class="net-summary"></div>
+        <div id="frameInfo" class="frame-info"></div>
+      </section>
+
+      <section id="vitals" class="card">
+        <h2><span>页面体验指标</span></h2>
+        <div class="vitals-list" id="vitalsGrid"></div>
+      </section>
+
+      <section class="card">
+        <h2><span>请求概览</span></h2>
+        <div id="overview"></div>
+      </section>
+
+      <section class="card">
+        <h2><span>最慢接口 Top 5 &gt; 1s</span></h2>
+        <ol id="slowList" class="slow-list"><li class="muted">加载中…</li></ol>
+      </section>
+
+      <!-- v0.10.0 新增:用户操作轨迹 -->
+      <section class="card" id="traceCard" style="display:none">
+        <h2><span>最近操作轨迹</span></h2>
+        <div id="traceList"></div>
+      </section>
+
+      <section class="card" id="warnings"></section>
+
+      <footer>
+        <button id="downloadPdf" class="primary" title="直接在本地生成 PDF 报告并下载">下载 PDF 报告</button>
+        <button id="openReport" title="在新标签页打开完整的网页报告">完整报告</button>
+        <button id="copySummary">复制摘要</button>
+      </footer>
+    </div>
+
+    <script src="pdf.js"></script>
+    <script src="analyzer.js"></script>
+    <script src="pdf-report.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

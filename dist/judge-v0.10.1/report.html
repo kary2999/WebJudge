@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>性能体检完整报告 - Judge</title>
+    <link rel="stylesheet" href="report.css" />
+  </head>
+  <body>
+    <header class="no-print">
+      <div>
+        <h1>性能体检完整报告</h1>
+        <div class="meta" id="metaLine"></div>
+      </div>
+      <div class="actions">
+        <button id="pdfBtn" class="primary" title="生成带 IP 水印的完整 PDF 报告并下载">下载 PDF 报告</button>
+        <button id="copyBtn">复制摘要</button>
+      </div>
+    </header>
+
+    <div class="print-header print-only">
+      <h1>性能体检完整报告 - Judge</h1>
+      <div class="meta" id="printMetaLine"></div>
+    </div>
+
+    <section class="card">
+      <h2>环境信息</h2>
+      <div id="env" class="kv"></div>
+    </section>
+
+    <section class="card" id="networkSection">
+      <h2>
+        用户网络环境
+        <span id="netRating"></span>
+      </h2>
+      <p class="hint" id="netReasons"></p>
+      <h3>浏览器估算 (navigator.connection)</h3>
+      <div id="netBrowser" class="kv wide"></div>
+      <h3>实测 (从已加载的资源)</h3>
+      <div id="netMeasured" class="kv wide"></div>
+      <h3 id="netProbeTitle" style="display:none">主动探测 RTT</h3>
+      <div id="netProbe" class="kv wide"></div>
+      <h3>按域名分组</h3>
+      <div class="scroll">
+        <table id="netOriginTable">
+          <thead><tr>
+            <th>域名</th><th>请求数</th>
+            <th>DNS p50</th><th>TCP p50</th><th>SSL p50</th>
+            <th>TTFB p50</th><th>下载速率 p50</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Web Vitals</h2>
+      <div id="vitals" class="vitals-grid"></div>
+      <details id="longTasksBlock" style="margin-top:8px">
+        <summary>主线程长任务 (<span id="ltCount">0</span>)</summary>
+        <div id="longTasks"></div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>优化建议</h2>
+      <div id="suggestions"></div>
+    </section>
+
+    <section class="card">
+      <h2>概览</h2>
+      <div id="overview" class="kv wide"></div>
+      <h3>按类别(前端 vs 后端)</h3>
+      <table id="catTable"><thead><tr><th>类别</th><th>数量</th><th>总传输</th><th>总耗时</th></tr></thead><tbody></tbody></table>
+      <h3>按资源类型</h3>
+      <table id="typeTable"><thead><tr><th>类型</th><th>数量</th><th>传输体积</th></tr></thead><tbody></tbody></table>
+      <h3>按域名 (Top 10)</h3>
+      <table id="originTable"><thead><tr><th>域名</th><th>请求数</th></tr></thead><tbody></tbody></table>
+    </section>
+
+    <section class="card" id="errorsSection">
+      <h2><span class="alert-dot"></span>JS 异常 <span class="count" id="errorsCount">0</span></h2>
+      <p class="hint">页面里抛出的未捕获 JS 异常 / Promise rejection / 资源加载失败。"页面白了"、"按钮没反应"通常源于此。</p>
+      <div id="errorsList"></div>
+    </section>
+
+    <section class="card" id="traceSection">
+      <h2>用户操作轨迹 <span class="count" id="traceCount">0</span></h2>
+      <p class="hint">最近 30 个用户行为(点击 / 输入 / 跳转)。同事说"我刚才点了什么我忘了" → 这里能找到。输入字段不抓 value,只记长度,密码框完全不记。</p>
+      <div id="traceTimeline" class="trace-timeline"></div>
+    </section>
+
+    <section class="card" id="failedSection">
+      <h2>HTTP 状态异常 (status ≠ 2xx)</h2>
+      <p class="hint">HTTP 层失败 —— 最优先修复。点"详情"查看完整请求/响应。</p>
+      <div class="scroll">
+        <table id="failedTable">
+          <thead><tr>
+            <th>Method</th><th>HTTP</th><th>biz.status</th><th>message</th><th>URL</th>
+            <th>耗时</th><th>extend.runtime</th><th>extend.unique</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="inconsistentSection">
+      <h2>同 URL 不一致结果(重复调用部分成功/部分失败)</h2>
+      <p class="hint">同一接口被调用多次但结果不统一(HTTP 或 biz.status 不同)。这类问题常被重试机制或乐观 UI 掩盖,点行展开失败的那一次调用。</p>
+      <div class="scroll">
+        <table id="inconsistentTable">
+          <thead><tr>
+            <th>URL</th><th>总调用</th><th>成功</th><th>失败</th><th>HTTP 集合</th><th>biz.status 集合</th><th>最差失败</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="bizFailedSection">
+      <h2>业务层失败 (HTTP 200 但响应 status ≠ 0)</h2>
+      <p class="hint">HTTP 返回成功,但 JSON 里业务 <code>status / code / errcode</code> 不为 0。最容易被 HTTP 监控漏掉的一类问题。</p>
+      <div class="scroll">
+        <table id="bizFailedTable">
+          <thead><tr>
+            <th>Method</th><th>HTTP</th><th>biz.status</th><th>message</th><th>URL</th>
+            <th>耗时</th><th>extend.runtime</th><th>extend.unique</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>慢接口 (全部 &gt; 1s,按耗时倒序)</h2>
+      <p class="hint">点"详情"可查看完整响应体。<code>Δ</code> = 前端实测 - 后端 extend.runtime,差值大的是非后端原因。</p>
+      <div class="scroll">
+        <table id="slowTable">
+          <thead><tr>
+            <th>#</th><th>方法</th><th>URL</th>
+            <th>实测</th><th>extend.runtime</th><th>Δ</th>
+            <th>队列</th><th>TTFB</th><th>下载</th>
+            <th>并发</th><th>HTTP</th><th>biz.status</th><th>原因</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>runtime 失配接口 (后端自报快 / 前端实测慢)</h2>
+      <p class="hint">后端 <code>extend.runtime</code> 快,但浏览器实测慢。差值来自浏览器排队 / 网络传输 / 前端 JS。</p>
+      <div class="scroll">
+        <table id="mismatchTable">
+          <thead><tr>
+            <th>URL</th><th>后端 runtime</th><th>前端实测</th><th>Δ</th><th>extend.unique</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>被浏览器排队的请求</h2>
+      <p class="hint">Chrome 对同一域名(HTTP/1.1)只允许 6 个并行连接,超出排队。这不是后端慢。</p>
+      <div class="scroll">
+        <table id="queuedTable">
+          <thead><tr><th>URL</th><th>耗时</th><th>队列等待</th><th>同源并发@start</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>前端静态大资源 (&ge; 300KB)</h2>
+      <div class="scroll">
+        <table id="bigTable">
+          <thead><tr><th>URL</th><th>类型</th><th>传输</th><th>解码后</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>重复请求 URL</h2>
+      <div class="scroll">
+        <table id="dupTable">
+          <thead><tr><th>URL</th><th>次数</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Print-only full detail dump.
+         Populated before window.print() so PDF export contains all API bodies. -->
+    <section id="printDetails" class="print-only print-details-wrap"></section>
+
+    <!-- Detail modal -->
+    <div id="detailMask" class="modal-mask no-print" hidden>
+      <div class="modal">
+        <header class="modal-header">
+          <div>
+            <span class="modal-method" id="mMethod"></span>
+            <span class="modal-status" id="mStatus"></span>
+            <span class="modal-biz"    id="mBiz"></span>
+          </div>
+          <div class="modal-actions">
+            <button id="mCopyBody">复制响应体</button>
+            <button id="mClose" aria-label="关闭">✕</button>
+          </div>
+        </header>
+        <div class="modal-url"><code id="mUrl"></code></div>
+
+        <div class="modal-grid">
+          <section>
+            <h3>时序 (ms)</h3>
+            <table class="modal-kv" id="mTiming"></table>
+          </section>
+          <section>
+            <h3>extend (服务端信息)</h3>
+            <table class="modal-kv" id="mExtend"></table>
+          </section>
+          <section>
+            <h3>请求/响应元信息</h3>
+            <table class="modal-kv" id="mMeta"></table>
+          </section>
+          <section>
+            <h3>业务数据</h3>
+            <table class="modal-kv" id="mBizTable"></table>
+          </section>
+        </div>
+
+        <h3 class="modal-section-title">
+          响应体
+          <span id="mBodyNote" class="muted"></span>
+        </h3>
+        <pre id="mBody" class="modal-body"></pre>
+      </div>
+    </div>
+
+    <script src="pdf.js"></script>
+    <script src="analyzer.js"></script>
+    <script src="pdf-report.js"></script>
+    <script src="report.js"></script>
+  </body>
+</html>

@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Judge UI 改版提案 v2</title>
+<style>
+/* ============ 基础重置 + 字体栈 ============ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font-sans: -apple-system, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Source Han Mono", monospace;
+
+  /* 基础灰阶 — 用于 90% 的页面 */
+  --ink-900: #0F172A;
+  --ink-700: #334155;
+  --ink-500: #64748B;
+  --ink-300: #CBD5E1;
+  --ink-200: #E2E8F0;
+  --ink-100: #F1F5F9;
+  --ink-50:  #F8FAFC;
+  --white:   #FFFFFF;
+
+  /* 品牌色 — 仅用于交互和强调 */
+  --brand-600: #4F46E5;
+  --brand-500: #6366F1;
+  --brand-50:  #EEF2FF;
+
+  /* 状态色 — 仅在标签 / 评分上出现 */
+  --good-700: #047857;
+  --good-50:  #ECFDF5;
+  --warn-700: #B45309;
+  --warn-50:  #FFFBEB;
+  --bad-700:  #B91C1C;
+  --bad-50:   #FEF2F2;
+  --info-700: #0E7490;
+  --info-50:  #ECFEFF;
+
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.04), 0 1px 1px rgba(15,23,42,0.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
+  --shadow-lg: 0 16px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.08);
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+}
+
+html, body { font-family: var(--font-sans); color: var(--ink-900); background: #F4F5F8; line-height: 1.5; }
+body { padding: 32px; }
+
+/* ============ 提案页面外壳 ============ */
+.proposal-wrap { max-width: 1200px; margin: 0 auto; }
+.proposal-head { margin-bottom: 32px; }
+.proposal-head .eyebrow {
+  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--brand-600);
+  background: var(--brand-50); padding: 4px 10px; border-radius: var(--radius-pill);
+}
+.proposal-head h1 {
+  font-size: 32px; font-weight: 700; margin: 12px 0 6px; color: var(--ink-900);
+  letter-spacing: -0.02em;
+}
+.proposal-head p { font-size: 15px; color: var(--ink-500); max-width: 680px; }
+
+.section-title {
+  font-size: 14px; font-weight: 600; color: var(--ink-700);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 48px 0 16px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.section-title .sub {
+  display: inline-block; margin-left: 12px; font-weight: 400;
+  font-size: 13px; color: var(--ink-500); text-transform: none; letter-spacing: 0;
+}
+
+/* ============ § 1. 设计 token ============ */
+.tokens-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.token-card {
+  background: var(--white); border-radius: var(--radius-lg);
+  padding: 20px; box-shadow: var(--shadow-sm);
+}
+.token-card h3 { font-size: 13px; font-weight: 600; color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+
+.swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+.swatch {
+  height: 56px; border-radius: var(--radius-sm); position: relative;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 6px 8px; font-size: 10px; color: var(--ink-700);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.swatch .name { font-weight: 600; }
+.swatch .hex { font-family: var(--font-mono); opacity: 0.7; }
+.swatch.dark { color: rgba(255,255,255,0.85); }
+
+.type-scale > div { display: flex; align-items: baseline; gap: 12px; padding: 4px 0; border-bottom: 1px dashed var(--ink-100); }
+.type-scale > div:last-child { border-bottom: none; }
+.type-scale .label { width: 120px; font-size: 11px; color: var(--ink-500); font-family: var(--font-mono); }
+.type-scale .sample { color: var(--ink-900); }
+
+/* ============ § 2. 弹窗 mockup ============ */
+.devices { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
+
+.popup-frame {
+  width: 380px; background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--ink-200);
+}
+.popup-frame .frame-bar {
+  height: 8px; background: linear-gradient(90deg, var(--brand-600), var(--brand-500));
+}
+.popup-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.popup-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.popup-head .brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: var(--ink-900);
+}
+.popup-head .brand .logo {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--brand-600); color: white;
+  display: grid; place-items: center; font-weight: 700; font-size: 12px;
+  font-family: var(--font-mono);
+}
+.icon-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 1px solid var(--ink-200); background: var(--white);
+  display: grid; place-items: center; cursor: pointer; color: var(--ink-700);
+}
+.icon-btn:hover { background: var(--ink-50); }
+
+.card {
+  background: var(--white); border: 1px solid var(--ink-200);
+  border-radius: var(--radius); padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--ink-500);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.card-title .actions { display: flex; gap: 4px; }
+.tiny-btn {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--ink-200); background: var(--white);
+  color: var(--brand-600); cursor: pointer; font-weight: 500;
+  letter-spacing: 0; text-transform: none;
+}
+.tiny-btn:hover { background: var(--brand-50); }
+
+/* 评分卡(核心改造) */
+.score-card { padding: 14px; }
+.score-flex { display: flex; align-items: center; gap: 16px; }
+.score-ring {
+  position: relative; width: 70px; height: 70px; flex-shrink: 0;
+}
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .ring-bg { stroke: var(--ink-100); }
+.score-ring .ring-fg { stroke: var(--brand-500); transition: stroke-dashoffset 0.6s ease; }
+.score-ring.good .ring-fg { stroke: var(--good-700); }
+.score-ring.fair .ring-fg { stroke: var(--warn-700); }
+.score-ring.poor .ring-fg { stroke: var(--bad-700); }
+.score-ring .num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 22px; font-weight: 700; color: var(--ink-900);
+  letter-spacing: -0.02em;
+}
+.score-info { flex: 1; }
+.score-info .label {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 2px 10px; border-radius: var(--radius-pill);
+  background: var(--ink-100); color: var(--ink-700); margin-bottom: 4px;
+}
+.score-card.good .score-info .label { background: var(--good-50); color: var(--good-700); }
+.score-card.fair .score-info .label { background: var(--warn-50); color: var(--warn-700); }
+.score-card.poor .score-info .label { background: var(--bad-50); color: var(--bad-700); }
+.score-info h3 { font-size: 16px; font-weight: 600; color: var(--ink-900); margin-bottom: 2px; }
+.score-info .desc { font-size: 12px; color: var(--ink-500); line-height: 1.45; }
+
+.kvs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; padding-top: 10px; border-top: 1px dashed var(--ink-100); margin-top: 10px; }
+.kvs .kv { font-size: 11px; display: flex; justify-content: space-between; }
+.kvs .kv .k { color: var(--ink-500); }
+.kvs .kv .v { color: var(--ink-900); font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* 体验指标卡 */
+.vital-row {
+  display: grid; grid-template-columns: 24px 1fr auto; gap: 10px;
+  align-items: center; padding: 8px 0; border-bottom: 1px solid var(--ink-100);
+}
+.vital-row:last-child { border-bottom: none; }
+.vital-row .icon {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+}
+.vital-row .icon.good { background: var(--good-50); color: var(--good-700); }
+.vital-row .icon.warn { background: var(--warn-50); color: var(--warn-700); }
+.vital-row .icon.bad  { background: var(--bad-50);  color: var(--bad-700); }
+.vital-row .name { font-size: 13px; font-weight: 500; color: var(--ink-900); }
+.vital-row .desc { font-size: 11px; color: var(--ink-500); margin-top: 1px; }
+.vital-row .right { text-align: right; }
+.vital-row .value { font-size: 14px; font-weight: 600; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+.vital-row .verdict { font-size: 10px; color: var(--ink-500); }
+
+/* 慢接口列表 */
+.slow-item {
+  padding: 10px 0; border-bottom: 1px solid var(--ink-100); display: flex; flex-direction: column; gap: 4px;
+}
+.slow-item:last-child { border-bottom: none; }
+.slow-item .row1 {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+}
+.slow-item .num {
+  font-size: 11px; font-weight: 600; color: var(--ink-500);
+  font-family: var(--font-mono); width: 18px;
+}
+.slow-item .url {
+  flex: 1; font-family: var(--font-mono); font-size: 11px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--ink-900);
+}
+.slow-item .dur {
+  font-size: 13px; font-weight: 700; color: var(--ink-900); font-variant-numeric: tabular-nums;
+}
+.slow-item .meta { font-size: 11px; color: var(--ink-500); padding-left: 26px; display: flex; gap: 8px; align-items: center; }
+
+/* 标签(全新一版,降低饱和度) */
+.tag {
+  display: inline-block; font-size: 10px; font-weight: 500;
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  letter-spacing: 0; line-height: 1.5;
+}
+.tag.backend  { background: var(--bad-50);  color: var(--bad-700); }
+.tag.network  { background: var(--warn-50); color: #C2410C; }
+.tag.cold     { background: #FFF7ED; color: #9A3412; }
+.tag.queue    { background: #FEF3C7; color: #92400E; }
+.tag.large    { background: var(--info-50); color: var(--info-700); }
+.tag.mixed    { background: var(--ink-100); color: var(--ink-700); }
+.tag.bizfail  { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+
+/* 弹窗按钮区 */
+.popup-actions {
+  display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px;
+}
+.btn {
+  font-size: 12px; padding: 8px 0; border-radius: var(--radius-sm);
+  border: 1px solid var(--ink-200); background: var(--white);
+  color: var(--ink-900); cursor: pointer; font-weight: 500; text-align: center;
+}
+.btn:hover { background: var(--ink-50); }
+.btn.primary {
+  background: var(--brand-600); color: white; border-color: var(--brand-600);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.btn.primary:hover { background: var(--brand-500); }
+
+/* ============ § 3. 完整报告页 mockup ============ */
+.report-frame {
+  background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md); overflow: hidden;
+  border: 1px solid var(--ink-200);
+}
+.browser-bar {
+  background: var(--ink-100); padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.browser-bar .dots { display: flex; gap: 6px; }
+.browser-bar .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--ink-300); }
+.browser-bar .url-bar {
+  flex: 1; background: var(--white); border-radius: 6px; padding: 5px 12px;
+  font-size: 11px; color: var(--ink-500); font-family: var(--font-mono);
+}
+.report-body { padding: 24px; }
+.report-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+.report-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.report-head .meta { font-size: 12px; color: var(--ink-500); font-family: var(--font-mono); }
+.report-head .actions { display: flex; gap: 8px; }
+
+.summary-grid { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 20px; }
+.score-large {
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  color: white; padding: 20px; border-radius: var(--radius-lg);
+  display: flex; align-items: center; gap: 20px;
+  box-shadow: var(--shadow-md);
+  position: relative; overflow: hidden;
+}
+.score-large::after {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.score-large .ring-large {
+  width: 86px; height: 86px; flex-shrink: 0; position: relative; z-index: 2;
+}
+.score-large .ring-large svg { transform: rotate(-90deg); }
+.score-large .ring-large .ring-bg { stroke: rgba(255,255,255,0.18); }
+.score-large .ring-large .ring-fg { stroke: white; }
+.score-large .ring-large .num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 28px; font-weight: 700; color: white;
+}
+.score-large .info { z-index: 2; }
+.score-large .info .verdict {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.18); margin-bottom: 6px;
+}
+.score-large .info h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.score-large .info p { font-size: 12px; opacity: 0.85; line-height: 1.5; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat {
+  background: var(--ink-50); border-radius: var(--radius);
+  padding: 12px; border: 1px solid var(--ink-200);
+}
+.stat .stat-label { font-size: 11px; color: var(--ink-500); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat .stat-value { font-size: 20px; font-weight: 700; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+.stat .stat-trend { font-size: 11px; color: var(--good-700); margin-top: 2px; }
+.stat.alert .stat-value { color: var(--bad-700); }
+.stat.alert .stat-trend { color: var(--bad-700); }
+
+/* 报告页表格 */
+.r-table { width: 100%; font-size: 12px; border-collapse: separate; border-spacing: 0; }
+.r-table thead th {
+  text-align: left; padding: 10px 12px; font-weight: 600; font-size: 11px;
+  color: var(--ink-500); background: var(--ink-50);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--ink-200);
+}
+.r-table thead th:first-child { border-top-left-radius: var(--radius-sm); }
+.r-table thead th:last-child  { border-top-right-radius: var(--radius-sm); }
+.r-table tbody td {
+  padding: 12px; border-bottom: 1px solid var(--ink-100);
+  vertical-align: middle;
+}
+.r-table tbody tr:hover td { background: var(--brand-50); cursor: pointer; }
+.r-table tbody tr:last-child td { border-bottom: none; }
+.r-table .url { font-family: var(--font-mono); font-size: 11px; }
+.r-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.r-section {
+  background: var(--white); border: 1px solid var(--ink-200);
+  border-radius: var(--radius); margin-bottom: 16px;
+  overflow: hidden;
+}
+.r-section .r-section-head {
+  padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--ink-100);
+}
+.r-section .r-section-head h3 {
+  font-size: 14px; font-weight: 600; color: var(--ink-900);
+  display: flex; align-items: center; gap: 8px;
+}
+.r-section .r-section-head .count {
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-500);
+  background: var(--ink-100); padding: 2px 8px; border-radius: var(--radius-pill);
+}
+.r-section .r-section-head .alert-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--bad-700);
+}
+
+/* 业务失败详情条 */
+.biz-fail {
+  padding: 16px; background: linear-gradient(180deg, #FEF2F2, var(--white) 80%);
+  border-bottom: 1px solid var(--ink-100);
+}
+.biz-fail:last-child { border-bottom: none; }
+.biz-fail .head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.biz-fail .method {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px;
+  background: var(--ink-900); color: white; padding: 2px 8px; border-radius: var(--radius-sm);
+}
+.biz-fail .url-line {
+  font-family: var(--font-mono); font-size: 12px; color: var(--brand-600);
+  word-break: break-all; padding: 8px 12px; background: var(--ink-50);
+  border-radius: var(--radius-sm); margin-bottom: 10px;
+}
+.biz-fail .timing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.biz-fail .timing-grid .t {
+  background: var(--white); border: 1px solid var(--ink-200);
+  border-radius: var(--radius-sm); padding: 6px 10px;
+}
+.biz-fail .timing-grid .t-label { font-size: 10px; color: var(--ink-500); }
+.biz-fail .timing-grid .t-value { font-size: 13px; font-weight: 600; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+
+.biz-fail .body-preview {
+  background: var(--ink-900); color: #E2E8F0;
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  line-height: 1.6; max-height: 100px; overflow-y: auto;
+}
+.biz-fail .body-preview .key { color: #93C5FD; }
+.biz-fail .body-preview .str { color: #FCA5A5; }
+.biz-fail .body-preview .num { color: #FCD34D; }
+
+/* ============ § 4. PDF 封面 mockup ============ */
+.pdf-frame {
+  width: 360px; aspect-ratio: 1 / 1.414; /* A4 ratio */
+  background: white; border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden; position: relative;
+  margin: 0 auto;
+}
+.pdf-frame .pdf-band {
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  color: white; padding: 28px 24px 20px;
+  position: relative; overflow: hidden;
+}
+.pdf-frame .pdf-band::after {
+  content: ''; position: absolute; top: -30px; right: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.pdf-frame .pdf-band .logo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; opacity: 0.9; }
+.pdf-frame .pdf-band .logo-row .logo {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: white; color: var(--brand-600);
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+}
+.pdf-frame .pdf-band .logo-row .name { font-size: 12px; font-weight: 500; }
+.pdf-frame .pdf-band h2 {
+  font-size: 22px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em;
+}
+.pdf-frame .pdf-band .subtitle { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+.pdf-frame .pdf-watermark {
+  position: absolute; top: 28px; right: 24px;
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+}
+
+.pdf-frame .pdf-body { padding: 20px 24px; }
+.pdf-frame .meta-block {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
+  font-size: 10px; padding: 12px 0 16px; border-bottom: 1px solid var(--ink-200);
+}
+.pdf-frame .meta-block .k { color: var(--ink-500); }
+.pdf-frame .meta-block .v { color: var(--ink-900); }
+
+.pdf-frame .hero-score {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--ink-200);
+}
+.pdf-frame .hero-score .ring {
+  width: 56px; height: 56px; position: relative; flex-shrink: 0;
+}
+.pdf-frame .hero-score .ring svg { transform: rotate(-90deg); }
+.pdf-frame .hero-score .num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 16px; font-weight: 700; color: var(--ink-900);
+}
+.pdf-frame .hero-score .verdict-pill {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--good-50); color: var(--good-700); margin-bottom: 3px;
+}
+.pdf-frame .hero-score h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.pdf-frame .hero-score p { font-size: 10px; color: var(--ink-500); line-height: 1.4; }
+
+.pdf-frame .findings { padding: 12px 0; }
+.pdf-frame .findings h5 { font-size: 10px; color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.pdf-frame .findings .item {
+  font-size: 11px; padding: 4px 0; display: flex; gap: 8px; color: var(--ink-700);
+  align-items: baseline;
+}
+.pdf-frame .findings .item .marker {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+}
+.pdf-frame .findings .item.error .marker { background: var(--bad-700); }
+.pdf-frame .findings .item.warn .marker  { background: var(--warn-700); }
+
+/* ============ 注释 ============ */
+.note {
+  background: var(--brand-50); border-left: 3px solid var(--brand-600);
+  padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 13px; color: var(--ink-700); margin: 16px 0;
+}
+.note strong { color: var(--brand-600); }
+
+/* 双栏布局 */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+.label-grid {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px 16px;
+  font-size: 12px; color: var(--ink-700); align-items: center;
+}
+.label-grid .desc { color: var(--ink-500); }
+</style>
+</head>
+<body>
+<div class="proposal-wrap">
+
+  <!-- ============ 头部 ============ -->
+  <div class="proposal-head">
+    <span class="eyebrow">DESIGN PROPOSAL · v0.10 · 仅是预览</span>
+    <h1>Judge 整体视觉改版</h1>
+    <p>
+      把"GitHub 配色 + 大白底"换成"克制的 Indigo 主调 + 微阴影卡片 + 真正的字重对比",
+      去掉 emoji,评分用进度环,标签降饱和度。下面所有 mock 都用真实数据填充,你可以直接判断方向是否对。
+    </p>
+  </div>
+
+  <!-- ============ § 1. 设计 token ============ -->
+  <div class="section-title">1. 设计 Token <span class="sub">颜色 / 字号 / 阴影 / 圆角 — 所有界面共用同一套</span></div>
+
+  <div class="tokens-grid">
+    <div class="token-card">
+      <h3>基础灰阶(90% 用这个)</h3>
+      <div class="swatches">
+        <div class="swatch dark" style="background:#0F172A"><div class="name">ink-900</div><div class="hex">#0F172A</div></div>
+        <div class="swatch dark" style="background:#334155"><div class="name">ink-700</div><div class="hex">#334155</div></div>
+        <div class="swatch dark" style="background:#64748B"><div class="name">ink-500</div><div class="hex">#64748B</div></div>
+        <div class="swatch" style="background:#CBD5E1"><div class="name">ink-300</div><div class="hex">#CBD5E1</div></div>
+        <div class="swatch" style="background:#E2E8F0"><div class="name">ink-200</div><div class="hex">#E2E8F0</div></div>
+        <div class="swatch" style="background:#F1F5F9"><div class="name">ink-100</div><div class="hex">#F1F5F9</div></div>
+        <div class="swatch" style="background:#F8FAFC"><div class="name">ink-50</div><div class="hex">#F8FAFC</div></div>
+        <div class="swatch" style="background:#FFFFFF;border:1px solid #E2E8F0"><div class="name">white</div><div class="hex">#FFFFFF</div></div>
+      </div>
+    </div>
+
+    <div class="token-card">
+      <h3>品牌 + 状态色(只在交互/标签里)</h3>
+      <div class="swatches" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="swatch dark" style="background:#4F46E5"><div class="name">brand-600</div><div class="hex">#4F46E5</div></div>
+        <div class="swatch dark" style="background:#047857"><div class="name">good-700</div><div class="hex">#047857</div></div>
+        <div class="swatch dark" style="background:#B45309"><div class="name">warn-700</div><div class="hex">#B45309</div></div>
+        <div class="swatch dark" style="background:#B91C1C"><div class="name">bad-700</div><div class="hex">#B91C1C</div></div>
+        <div class="swatch" style="background:#EEF2FF;color:#4338CA"><div class="name">brand-50</div><div class="hex">#EEF2FF</div></div>
+        <div class="swatch" style="background:#ECFDF5;color:#047857"><div class="name">good-50</div><div class="hex">#ECFDF5</div></div>
+        <div class="swatch" style="background:#FFFBEB;color:#B45309"><div class="name">warn-50</div><div class="hex">#FFFBEB</div></div>
+        <div class="swatch" style="background:#FEF2F2;color:#B91C1C"><div class="name">bad-50</div><div class="hex">#FEF2F2</div></div>
+      </div>
+    </div>
+
+    <div class="token-card">
+      <h3>字号阶梯</h3>
+      <div class="type-scale">
+        <div><span class="label">caption / 11</span><span class="sample" style="font-size:11px">页面性能体检报告</span></div>
+        <div><span class="label">body / 13</span><span class="sample" style="font-size:13px">页面性能体检报告</span></div>
+        <div><span class="label">subtitle / 16</span><span class="sample" style="font-size:16px;font-weight:500">页面性能体检报告</span></div>
+        <div><span class="label">title / 20</span><span class="sample" style="font-size:20px;font-weight:600">页面性能体检报告</span></div>
+        <div><span class="label">headline / 24</span><span class="sample" style="font-size:24px;font-weight:600;letter-spacing:-0.01em">页面性能体检报告</span></div>
+        <div><span class="label">display / 32</span><span class="sample" style="font-size:32px;font-weight:700;letter-spacing:-0.02em">Judge</span></div>
+      </div>
+    </div>
+
+    <div class="token-card">
+      <h3>慢接口标签(原 5 类,降饱和度)</h3>
+      <div class="label-grid">
+        <span class="tag backend">后端慢</span>
+        <span class="desc">服务端处理 &gt; 50%,真后端慢</span>
+        <span class="tag network">网络拥塞</span>
+        <span class="desc">网络往返 &gt; 40%,链路问题</span>
+        <span class="tag cold">首次连接慢</span>
+        <span class="desc">DNS+TCP+SSL &gt; 300ms</span>
+        <span class="tag queue">被浏览器排队</span>
+        <span class="desc">同源并发 ≥ 6,前端问题</span>
+        <span class="tag large">响应过大</span>
+        <span class="desc">下载 &gt; 500ms 且 &gt; 200KB</span>
+        <span class="tag mixed">混合</span>
+        <span class="desc">没有单一原因占主导</span>
+        <span class="tag bizfail">业务层失败</span>
+        <span class="desc">HTTP 200 但 biz.status 异常</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ § 2. 弹窗 ============ -->
+  <div class="section-title">2. 扩展弹窗 popup <span class="sub">实际尺寸 380px,与点扩展图标看到的一致</span></div>
+
+  <div class="devices">
+
+    <div class="popup-frame">
+      <div class="frame-bar"></div>
+      <div class="popup-body">
+
+        <!-- 头 -->
+        <div class="popup-head">
+          <div class="brand">
+            <span class="logo">J</span>
+            <span>Judge 性能体检</span>
+          </div>
+          <button class="icon-btn" title="重新采样">↻</button>
+        </div>
+
+        <!-- 网络评分卡(score-card) -->
+        <div class="card score-card good">
+          <div class="card-title">
+            <span>用户网络</span>
+            <span class="actions">
+              <button class="tiny-btn">实测 RTT</button>
+              <button class="tiny-btn">实测各域名</button>
+            </span>
+          </div>
+          <div class="score-flex">
+            <div class="score-ring good">
+              <svg width="70" height="70" viewBox="0 0 70 70">
+                <circle class="ring-bg" cx="35" cy="35" r="30" fill="none" stroke-width="6" />
+                <circle class="ring-fg" cx="35" cy="35" r="30" fill="none" stroke-width="6"
+                        stroke-dasharray="188.5" stroke-dashoffset="49" stroke-linecap="round"/>
+              </svg>
+              <div class="num">74</div>
+            </div>
+            <div class="score-info">
+              <span class="label">良好</span>
+              <h3>网络环境基本正常</h3>
+              <div class="desc">实测 RTT 220ms,有 1 个 API 域名响应稍慢。</div>
+            </div>
+          </div>
+          <div class="kvs">
+            <div class="kv"><span class="k">实测下载</span><span class="v">5.21 Mbps</span></div>
+            <div class="kv"><span class="k">估算 RTT</span><span class="v">180 ms</span></div>
+            <div class="kv"><span class="k">静态 TTFB</span><span class="v">220 ms</span></div>
+            <div class="kv"><span class="k">DNS p50</span><span class="v">42 ms</span></div>
+          </div>
+        </div>
+
+        <!-- 体验指标卡 -->
+        <div class="card">
+          <div class="card-title"><span>用户感知</span></div>
+
+          <div class="vital-row">
+            <div class="icon good">L</div>
+            <div>
+              <div class="name">首屏主内容出现</div>
+              <div class="desc">用户从点开到看到主要内容</div>
+            </div>
+            <div class="right">
+              <div class="value">1.8 s</div>
+              <div class="verdict">很快</div>
+            </div>
+          </div>
+
+          <div class="vital-row">
+            <div class="icon warn">C</div>
+            <div>
+              <div class="name">页面抖动</div>
+              <div class="desc">排版突然错位的程度</div>
+            </div>
+            <div class="right">
+              <div class="value">0.18</div>
+              <div class="verdict">偶有跳动</div>
+            </div>
+          </div>
+
+          <div class="vital-row">
+            <div class="icon good">I</div>
+            <div>
+              <div class="name">点击响应速度</div>
+              <div class="desc">点按钮到界面响应</div>
+            </div>
+            <div class="right">
+              <div class="value">95 ms</div>
+              <div class="verdict">灵敏</div>
+            </div>
+          </div>
+
+          <div class="vital-row">
+            <div class="icon bad">T</div>
+            <div>
+              <div class="name">主线程卡顿</div>
+              <div class="desc">JS 长任务次数</div>
+            </div>
+            <div class="right">
+              <div class="value">12 次</div>
+              <div class="verdict">明显卡顿</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 慢接口 Top -->
+        <div class="card">
+          <div class="card-title"><span>最慢接口 Top 5</span><span class="actions"><span style="font-size:10px;color:var(--ink-500)">&gt; 1s</span></span></div>
+
+          <div class="slow-item">
+            <div class="row1">
+              <span class="num">1</span>
+              <span class="url">/api/order/list?page=2</span>
+              <span class="dur">2.51 s</span>
+            </div>
+            <div class="meta">
+              <span class="tag backend">后端慢</span>
+              <span>server 1840ms · Δ +120ms</span>
+            </div>
+          </div>
+
+          <div class="slow-item">
+            <div class="row1">
+              <span class="num">2</span>
+              <span class="url">/api/user/profile</span>
+              <span class="dur">1.89 s</span>
+            </div>
+            <div class="meta">
+              <span class="tag network">网络拥塞</span>
+              <span>networkRT 1240ms</span>
+            </div>
+          </div>
+
+          <div class="slow-item">
+            <div class="row1">
+              <span class="num">3</span>
+              <span class="url">/api/dashboard/stats</span>
+              <span class="dur">1.45 s</span>
+            </div>
+            <div class="meta">
+              <span class="tag queue">被浏览器排队</span>
+              <span>queue 850ms · 同源并发 8</span>
+            </div>
+          </div>
+
+          <div class="slow-item">
+            <div class="row1">
+              <span class="num">4</span>
+              <span class="url">/api/transaction/detail</span>
+              <span class="dur">1.21 s</span>
+            </div>
+            <div class="meta">
+              <span class="tag bizfail">业务失败</span>
+              <span>HTTP 200 · biz.status=1055</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作区 -->
+        <div class="popup-actions">
+          <button class="btn primary">下载 PDF 报告</button>
+          <button class="btn">完整报告</button>
+          <button class="btn">复制摘要</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 旁边的标注 -->
+    <div>
+      <div class="note">
+        <strong>核心改造点(对照旧版):</strong>
+        <ul style="margin: 8px 0 0 20px; line-height: 1.7;">
+          <li>顶部 8px 渐变细条 = 唯一品牌高亮,弹窗主体保持克制</li>
+          <li>评分用 <strong>圆形进度环</strong> 替代旧的 emoji + 大数字组合,所有阅读器都正常显示</li>
+          <li>体验指标改成 <strong>list 形式</strong>,去掉旧的彩色背景行(太花),改用左侧字母小色块标识等级</li>
+          <li>慢接口列表的 <strong>tag 降饱和度</strong>,文字色与背景色色相一致,不再"红配绿"</li>
+          <li>按钮主次清晰:主操作蓝色实底,次操作描边白底</li>
+          <li>所有数字一律 <code>tabular-nums</code>,纵向对齐,不会蹦</li>
+        </ul>
+      </div>
+
+      <div class="section-title" style="margin-top: 24px">2.1 评分变体 <span class="sub">三种状态都给你看一下</span></div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+
+        <div class="card score-card good" style="flex:1; min-width: 280px;">
+          <div class="score-flex">
+            <div class="score-ring good">
+              <svg width="70" height="70" viewBox="0 0 70 70">
+                <circle class="ring-bg" cx="35" cy="35" r="30" fill="none" stroke-width="6"/>
+                <circle class="ring-fg" cx="35" cy="35" r="30" fill="none" stroke-width="6"
+                        stroke-dasharray="188.5" stroke-dashoffset="38" stroke-linecap="round"/>
+              </svg>
+              <div class="num">80</div>
+            </div>
+            <div class="score-info">
+              <span class="label">优秀</span>
+              <h3>网络很好</h3>
+              <div class="desc">慢锅不在你这,可放心提工单。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card score-card fair" style="flex:1; min-width: 280px;">
+          <div class="score-flex">
+            <div class="score-ring fair">
+              <svg width="70" height="70" viewBox="0 0 70 70">
+                <circle class="ring-bg" cx="35" cy="35" r="30" fill="none" stroke-width="6"/>
+                <circle class="ring-fg" cx="35" cy="35" r="30" fill="none" stroke-width="6"
+                        stroke-dasharray="188.5" stroke-dashoffset="92" stroke-linecap="round"/>
+              </svg>
+              <div class="num">51</div>
+            </div>
+            <div class="score-info">
+              <span class="label">一般</span>
+              <h3>网络稍慢</h3>
+              <div class="desc">部分慢可能是网络导致,不全是后端。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card score-card poor" style="flex:1; min-width: 280px;">
+          <div class="score-flex">
+            <div class="score-ring poor">
+              <svg width="70" height="70" viewBox="0 0 70 70">
+                <circle class="ring-bg" cx="35" cy="35" r="30" fill="none" stroke-width="6"/>
+                <circle class="ring-fg" cx="35" cy="35" r="30" fill="none" stroke-width="6"
+                        stroke-dasharray="188.5" stroke-dashoffset="155" stroke-linecap="round"/>
+              </svg>
+              <div class="num">28</div>
+            </div>
+            <div class="score-info">
+              <span class="label">差</span>
+              <h3>用户网络差</h3>
+              <div class="desc">检查 WiFi / 切有线 / 换网络环境。</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ § 3. 完整报告页 ============ -->
+  <div class="section-title">3. 完整报告页 report.html <span class="sub">同事点"完整报告"打开的新标签页</span></div>
+
+  <div class="report-frame">
+    <div class="browser-bar">
+      <div class="dots">
+        <div class="dot" style="background:#EF4444"></div>
+        <div class="dot" style="background:#F59E0B"></div>
+        <div class="dot" style="background:#10B981"></div>
+      </div>
+      <div class="url-bar">chrome-extension://&lt;judge&gt;/report.html</div>
+    </div>
+    <div class="report-body">
+
+      <div class="report-head">
+        <div>
+          <h2>性能体检报告</h2>
+          <div class="meta">https://admin.example.com/dashboard · 2026-04-29 14:32 · 4 个 frame · 捕获 187 个响应</div>
+        </div>
+        <div class="actions">
+          <button class="btn primary">下载 PDF 报告</button>
+          <button class="btn">复制摘要</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+
+        <div class="score-large">
+          <div class="ring-large">
+            <svg width="86" height="86" viewBox="0 0 86 86">
+              <circle class="ring-bg" cx="43" cy="43" r="38" fill="none" stroke-width="7"/>
+              <circle class="ring-fg" cx="43" cy="43" r="38" fill="none" stroke-width="7"
+                      stroke-dasharray="238.7" stroke-dashoffset="62" stroke-linecap="round"/>
+            </svg>
+            <div class="num">74</div>
+          </div>
+          <div class="info">
+            <span class="verdict">良好</span>
+            <h3>网络环境基本正常</h3>
+            <p>实测 RTT 220ms · 5.2 Mbps · 1 个 API 域名响应稍慢 · 5 个接口判定为网络拥塞</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-label">总请求</div>
+            <div class="stat-value">541</div>
+            <div class="stat-trend">前端静态 487 · API 54</div>
+          </div>
+          <div class="stat alert">
+            <div class="stat-label">慢接口</div>
+            <div class="stat-value">35</div>
+            <div class="stat-trend">15% 比例偏高</div>
+          </div>
+          <div class="stat alert">
+            <div class="stat-label">业务失败</div>
+            <div class="stat-value">2</div>
+            <div class="stat-trend">需要立即处理</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 业务失败区 -->
+      <div class="r-section">
+        <div class="r-section-head">
+          <h3><span class="alert-dot"></span>业务层失败 — HTTP 200 但 biz.status 异常 <span class="count">2</span></h3>
+          <span style="font-size:11px; color:var(--ink-500)">最容易被监控漏报,优先看</span>
+        </div>
+
+        <div class="biz-fail">
+          <div class="head">
+            <span class="method">POST</span>
+            <span class="tag bizfail">biz.status = 1055</span>
+            <span style="font-size:11px; color:var(--ink-500)">·</span>
+            <span style="font-size:11px;">message: <strong>Server Error</strong></span>
+          </div>
+          <div class="url-line">/api-s1/admin/OtherBusiness/MortgageLoans/transaction</div>
+          <div class="timing-grid">
+            <div class="t"><div class="t-label">实测耗时</div><div class="t-value">487 ms</div></div>
+            <div class="t"><div class="t-label">后端 runtime</div><div class="t-value">—</div></div>
+            <div class="t"><div class="t-label">TTFB</div><div class="t-value">297 ms</div></div>
+            <div class="t"><div class="t-label">extend.unique</div><div class="t-value" style="font-size:10px;">69e5af75…</div></div>
+          </div>
+          <div class="body-preview"><span class="key">"status"</span>: <span class="num">1055</span>, <span class="key">"msg"</span>: <span class="str">"Server Error"</span>, <span class="key">"data"</span>: null, <span class="key">"extend"</span>: { <span class="key">"date"</span>: <span class="str">"2026-04-29 14:32:18"</span>, <span class="key">"unique"</span>: <span class="str">"69e5af7563e99562916203"</span> }</div>
+        </div>
+
+      </div>
+
+      <!-- 慢接口表格 -->
+      <div class="r-section">
+        <div class="r-section-head">
+          <h3>慢接口 <span class="count">35</span></h3>
+          <span style="font-size:11px; color:var(--ink-500)">点行展开详情</span>
+        </div>
+        <table class="r-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>方法</th>
+              <th>URL</th>
+              <th class="num">实测</th>
+              <th class="num">后端 runtime</th>
+              <th class="num">Δ</th>
+              <th>原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><span class="tag mixed" style="font-family:var(--font-mono)">GET</span></td>
+              <td class="url">/api/order/list?page=2&pageSize=20</td>
+              <td class="num">2510</td>
+              <td class="num">1840</td>
+              <td class="num" style="color:var(--ink-500)">+120</td>
+              <td><span class="tag backend">后端慢</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><span class="tag mixed" style="font-family:var(--font-mono)">POST</span></td>
+              <td class="url">/api/user/profile</td>
+              <td class="num">1890</td>
+              <td class="num">340</td>
+              <td class="num" style="color:var(--bad-700)">+1420</td>
+              <td><span class="tag network">网络拥塞</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><span class="tag mixed" style="font-family:var(--font-mono)">GET</span></td>
+              <td class="url">/api/dashboard/stats</td>
+              <td class="num">1450</td>
+              <td class="num">280</td>
+              <td class="num" style="color:var(--bad-700)">+1170</td>
+              <td><span class="tag queue">被浏览器排队</span></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><span class="tag mixed" style="font-family:var(--font-mono)">GET</span></td>
+              <td class="url">/api/agent/agent_info/show/101005</td>
+              <td class="num">2512</td>
+              <td class="num">772</td>
+              <td class="num" style="color:var(--bad-700)">+1740</td>
+              <td><span class="tag network">网络拥塞</span></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><span class="tag mixed" style="font-family:var(--font-mono)">POST</span></td>
+              <td class="url">/api/Stats/AssetDailyController/availableAssets</td>
+              <td class="num">1202</td>
+              <td class="num">1067</td>
+              <td class="num" style="color:var(--ink-500)">+135</td>
+              <td><span class="tag backend">后端慢</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ § 4. PDF 封面 ============ -->
+  <div class="section-title">4. PDF 报告新封面 <span class="sub">同事下载/发给开发的 PDF,首页就传达"专业感"</span></div>
+
+  <div class="two-col">
+
+    <div class="pdf-frame">
+      <div class="pdf-band">
+        <div class="pdf-watermark">IP  120.231.45.67</div>
+        <div class="logo-row">
+          <span class="logo">J</span>
+          <span class="name">Judge 性能体检</span>
+        </div>
+        <h2>性能体检报告</h2>
+        <div class="subtitle">2026-04-29 14:32 · v0.10</div>
+      </div>
+      <div class="pdf-body">
+
+        <div class="meta-block">
+          <span class="k">页面</span><span class="v" style="font-family:var(--font-mono); font-size:9px;">https://admin.example.com/...</span>
+          <span class="k">采样人 IP</span><span class="v">120.231.45.67</span>
+          <span class="k">总请求</span><span class="v">541 个 / 2564 KB</span>
+          <span class="k">捕获响应体</span><span class="v">187 个</span>
+        </div>
+
+        <div class="hero-score">
+          <div class="ring">
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="24" fill="none" stroke="#E2E8F0" stroke-width="5"/>
+              <circle cx="28" cy="28" r="24" fill="none" stroke="#047857" stroke-width="5"
+                      stroke-dasharray="150.8" stroke-dashoffset="39" stroke-linecap="round"
+                      transform="rotate(-90 28 28)"/>
+            </svg>
+            <div class="num">74</div>
+          </div>
+          <div>
+            <span class="verdict-pill">良好</span>
+            <h4>网络环境基本正常</h4>
+            <p>实测下载 5.2 Mbps · RTT 220ms · 1 个域名响应稍慢</p>
+          </div>
+        </div>
+
+        <div class="findings">
+          <h5>关键发现</h5>
+          <div class="item error"><span class="marker"></span><div><strong>2 个</strong> 接口业务失败(HTTP 200 但 biz.status 异常),最高优先级</div></div>
+          <div class="item error"><span class="marker"></span><div>同源 admin.example.com 请求 143 个,触发浏览器排队 14 个</div></div>
+          <div class="item warn"><span class="marker"></span><div><strong>5 个</strong> 慢接口判定为网络拥塞,需排查链路</div></div>
+          <div class="item warn"><span class="marker"></span><div><strong>3 个</strong> 接口后端耗时占比 &gt; 70%</div></div>
+          <div class="item warn"><span class="marker"></span><div>检测到 9 个主线程长任务(&gt; 50ms)</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="note">
+        <strong>PDF 改造点:</strong>
+        <ul style="margin:8px 0 0 20px; line-height:1.7;">
+          <li>封面顶部用 indigo→purple 渐变带 + 微圆形装饰,一眼能识别这是 Judge 的报告而非随便印的</li>
+          <li>左上 Logo 缩到 22×22,右上 IP 水印从"红色 monospace"改成低调的白色 mono</li>
+          <li>首页直接放 <strong>评分环 + 关键发现 5 条</strong>,翻第一页就能下结论 —— 不用看到第 5 页才发现"哦这里挂了"</li>
+          <li>正文表格主题色统一替换,长 URL 强制 break-word,不会再叠印</li>
+          <li>字体改用 <strong>嵌入式 Noto Sans SC 子集</strong>(打包进 zip,+200KB,但所有阅读器一致显示)</li>
+        </ul>
+      </div>
+
+      <div class="note" style="background:#FFFBEB; border-color:var(--warn-700);">
+        <strong style="color:var(--warn-700);">需要你拍板的事:</strong>
+        <ol style="margin:8px 0 0 20px; line-height:1.7;">
+          <li>主色用 <strong>Indigo</strong>(#4F46E5,我现在的方案)还是 <strong>Teal</strong>(#0F766E,更"工程感")?</li>
+          <li>评分要不要用渐变色环(0-100 不同分段不同颜色)?现在是单色按评级切。</li>
+          <li>嵌入 Noto Sans SC 字体(zip +200KB)还是继续用 STSong-Light(zip 不变,但样式不一定每个机器一致)?</li>
+          <li>tag 配色要不要再"暗"一点?现在是 50/700 配,比旧版降了一档饱和度,但仍带颜色。</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-title" style="margin-top: 56px">下一步</div>
+  <div class="note">
+    确认方向后我会按这套 token 重写:<br>
+    1. 抽出 <code>tokens.css</code>(一份所有页面共用)<br>
+    2. 重写 <code>popup.css</code> / <code>report.css</code> 的所有组件以用 token<br>
+    3. 改 <code>pdf.js</code>(扩展生成的 PDF)和 <code>build_manual.py</code>(使用手册 PDF)的配色 + 评分环<br>
+    4. 出新版 zip(估计 v0.10.0)<br>
+    工作量:大约 1.5 个迭代。
+  </div>
+
+</div>
+</body>
+</html>
