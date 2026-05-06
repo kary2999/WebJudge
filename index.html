@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Judge — 页面性能体检 | 让"系统好慢啊"变成可定位的诊断报告</title>
+<style>
+  :root {
+    --indigo: #4f46e5;
+    --indigo-light: #eef2ff;
+    --indigo-dark: #3730a3;
+    --slate-900: #0f172a;
+    --slate-700: #334155;
+    --slate-500: #64748b;
+    --slate-200: #e2e8f0;
+    --slate-50: #f8fafc;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --green: #22c55e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: var(--slate-700);
+    line-height: 1.7;
+    background: #fff;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-dark) 100%);
+    color: #fff;
+    text-align: center;
+    padding: 80px 24px 64px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: #c7d2fe; }
+  .hero .tagline {
+    font-size: 20px;
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .hero .cta {
+    display: inline-block;
+    background: #fff;
+    color: var(--indigo);
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .hero .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+  .hero .sub-cta {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    opacity: 0.7;
+  }
+
+  /* ── Section ── */
+  section { max-width: 960px; margin: 0 auto; padding: 64px 24px; }
+  section h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  section h2 em {
+    font-style: normal;
+    color: var(--indigo);
+  }
+
+  /* ── Pain Points ── */
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .pain-card {
+    background: #fff;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .pain-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--red);
+    border-radius: 12px 12px 0 0;
+  }
+  .pain-card .scene {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--slate-900);
+    margin-bottom: 8px;
+  }
+  .pain-card .quote {
+    font-size: 14px;
+    color: var(--slate-500);
+    font-style: italic;
+    margin-bottom: 12px;
+    padding-left: 12px;
+    border-left: 3px solid var(--slate-200);
+  }
+  .pain-card .result {
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+  }
+
+  /* ── Solution / After ── */
+  .solution-bg { background: var(--indigo-light); }
+  .solution-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .sol-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 24px;
+    box-shadow: 0 1px 4px rgba(79,70,229,.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .sol-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--green);
+    border-radius: 12px 12px 0 0;
+  }
+  .sol-card .icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  .sol-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 6px;
+  }
+  .sol-card p {
+    font-size: 14px;
+    color: var(--slate-500);
+  }
+
+  /* ── Features ── */
+  .feat-list {
+    list-style: none;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .feat-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .feat-list li:last-child { border-bottom: none; }
+  .feat-tag {
+    flex-shrink: 0;
+    display: inline-block;
+    background: var(--indigo);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    min-width: 80px;
+    text-align: center;
+  }
+  .feat-list li div { flex: 1; }
+  .feat-list li strong { color: var(--slate-900); font-size: 15px; }
+  .feat-list li p { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+
+  /* ── How it works ── */
+  .steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .step {
+    text-align: center;
+    width: 160px;
+  }
+  .step .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--indigo);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .step h4 { font-size: 15px; color: var(--slate-900); margin-bottom: 4px; }
+  .step p { font-size: 13px; color: var(--slate-500); }
+
+  /* ── Privacy ── */
+  .privacy-bar {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .privacy-bar h3 { font-size: 18px; color: var(--slate-900); margin-bottom: 16px; text-align: center; }
+  .priv-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .priv-items span {
+    font-size: 14px;
+    color: var(--slate-700);
+    padding-left: 24px;
+    position: relative;
+  }
+  .priv-items span::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--slate-900);
+    color: var(--slate-500);
+    font-size: 13px;
+  }
+  .footer a { color: #c7d2fe; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  .footer .links { margin-bottom: 12px; }
+  .footer .links a { margin: 0 12px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 28px; }
+    .hero .tagline { font-size: 16px; }
+    section { padding: 48px 16px; }
+    section h2 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════ Hero ════════ -->
+<div class="hero">
+  <h1>Judge <span>页面性能体检</span></h1>
+  <p class="tagline">
+    让"系统好慢啊"变成一份开发同学能立刻定位的诊断报告。<br>
+    点一下扩展图标，自动判断是后端慢、网络差、还是浏览器排队。
+  </p>
+  <a class="cta" href="https://github.com/kary2999/WebJudge/releases">下载安装</a>
+  <span class="sub-cta">Chrome 扩展 · 完全免费 · 零数据上传</span>
+</div>
+
+<!-- ════════ Pain Points ════════ -->
+<section>
+  <h2>你一定遇到过这些<em>痛点</em></h2>
+  <div class="pain-grid">
+
+    <div class="pain-card">
+      <div class="scene">"系统好慢啊"</div>
+      <div class="quote">"后台打开特别卡，你们看看吧" —— 来自产品/运营同事的工单</div>
+      <div class="result">开发收到后无法复现，不知道是哪个接口慢、是网络问题还是后端问题，工单挂了三天没人领。</div>
+    </div>
+
+    <div class="pain-card">
+      <div class="scene">扯皮：前端还是后端的锅？</div>
+      <div class="quote">"接口 2 秒才返回，肯定是后端慢" / "我后端日志才 50ms，是你前端的问题"</div>
+      <div class="result">双方各执一词，缺少客观数据。排查成本远高于 bug 本身。</div>
+    </div>
+
+    <div class="pain-card">
+      <div class="scene">HTTP 200 但业务报错</div>
+      <div class="quote">"监控没告警啊，接口都是 200" —— 但页面显示的是空数据或错误提示</div>
+      <div class="result">后端返回 HTTP 200 + JSON 里 status=-1，常规监控发现不了，用户看到的是白屏或异常。</div>
+    </div>
+
+    <div class="pain-card">
+      <div class="scene">"刚才还好好的，突然就卡了"</div>
+      <div class="quote">"我也不知道点了什么，反正就卡住了" —— 同事描述 bug 的日常</div>
+      <div class="result">没有操作轨迹，开发无法复现。来回沟通 5 轮才定位到是某个按钮触发了慢查询。</div>
+    </div>
+
+    <div class="pain-card">
+      <div class="scene">用户自己网差，却说系统有问题</div>
+      <div class="quote">"所有页面都慢，肯定是你们服务器挂了"</div>
+      <div class="result">开发排查半天，发现是用户在用公司 VPN，下行只有 0.5Mbps。但当时没证据证明。</div>
+    </div>
+
+    <div class="pain-card">
+      <div class="scene">F12 开发者工具？算了吧</div>
+      <div class="quote">"让他打开 F12 截图给我" / "什么是 F12？"</div>
+      <div class="result">非技术人员用不了 DevTools，你也不可能远程接管每个人的电脑。</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════ Solution: Judge 怎么解决 ════════ -->
+<section class="solution-bg">
+  <h2>装上 Judge，<em>一键出报告</em></h2>
+  <div class="solution-grid">
+
+    <div class="sol-card">
+      <div class="icon">&#128269;</div>
+      <h3>慢接口 Top 排名 + 5 类归因</h3>
+      <p>自动按耗时排序，每条标注原因：后端慢 / 网络拥塞 / 首次连接慢 / 浏览器排队 / 响应过大。前后端不用再吵。</p>
+    </div>
+
+    <div class="sol-card">
+      <div class="icon">&#127919;</div>
+      <h3>业务层失败检测</h3>
+      <p>HTTP 200 但 JSON 里 biz.status 异常？Judge 自动识别并高亮。常规监控看不到的问题，这里一目了然。</p>
+    </div>
+
+    <div class="sol-card">
+      <div class="icon">&#128220;</div>
+      <h3>完整 PDF 报告</h3>
+      <p>带 IP 水印的专业诊断报告，直接粘到工单或发邮件。开发收到即可定位，不用再来回问。</p>
+    </div>
+
+    <div class="sol-card">
+      <div class="icon">&#128200;</div>
+      <h3>网络环境 0-100 评分</h3>
+      <p>综合下行带宽、RTT、丢包推算的客观分数。"是不是我网差？" —— 看这个数字就知道。</p>
+    </div>
+
+    <div class="sol-card">
+      <div class="icon">&#128065;</div>
+      <h3>用户操作轨迹</h3>
+      <p>自动记录最近 30 次点击/输入/跳转。"我刚才点了什么来着？" —— 不用问了，报告里有。</p>
+    </div>
+
+    <div class="sol-card">
+      <div class="icon">&#9888;</div>
+      <h3>JS 异常 + 资源加载失败</h3>
+      <p>"页面白了" 的真实原因。运行时报错、unhandled rejection、CSS/JS/图片加载失败，全部捕获。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════ How it works ════════ -->
+<section>
+  <h2>使用只需 <em>3 步</em></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <h4>打开慢页面</h4>
+      <p>F5 刷新一次，让扩展采集完整数据</p>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <h4>复现卡顿操作</h4>
+      <p>正常使用，该点什么点什么</p>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <h4>点扩展图标</h4>
+      <p>弹窗显示诊断结果，一键下载 PDF</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ Feature List ════════ -->
+<section class="solution-bg">
+  <h2>完整<em>功能清单</em></h2>
+  <ul class="feat-list">
+    <li>
+      <span class="feat-tag">诊断</span>
+      <div>
+        <strong>慢接口 Top N 排名</strong>
+        <p>按耗时倒序，每条标注 5 类原因标签（后端慢 / 网络拥塞 / 首次连接 / 浏览器排队 / 响应过大）</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">诊断</span>
+      <div>
+        <strong>前后端责任判定</strong>
+        <p>利用 Resource Timing + 服务端 extend.runtime 交叉验证，客观区分谁的问题</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">检测</span>
+      <div>
+        <strong>业务层失败抓取</strong>
+        <p>HTTP 200 但 JSON 业务状态码异常，自动识别并展示响应体详情</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">检测</span>
+      <div>
+        <strong>HTTP 状态异常</strong>
+        <p>4xx / 5xx / 超时等非 200 接口单独列出，含响应体片段</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">评估</span>
+      <div>
+        <strong>网络环境 0-100 评分</strong>
+        <p>综合 navigator.connection + 域名实测 RTT，得出客观网络质量分数</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">评估</span>
+      <div>
+        <strong>Web Vitals 体验指标</strong>
+        <p>LCP / FCP / CLS / INP / TTFB / Long Tasks，用好/中/差三档直观展示</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">追踪</span>
+      <div>
+        <strong>用户操作轨迹</strong>
+        <p>最近 30 次点击/输入/路由跳转/页面切换，带时间戳和元素定位。不记录密码。</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">追踪</span>
+      <div>
+        <strong>JS 异常 + 资源失败</strong>
+        <p>window.onerror、unhandledrejection、link/script/img 加载失败，完整错误栈</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">架构</span>
+      <div>
+        <strong>iframe 多框架支持</strong>
+        <p>后台管理系统常用 iframe 嵌套，Judge 自动采集所有子框架数据并合并分析</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">导出</span>
+      <div>
+        <strong>PDF / 摘要 / 完整报告</strong>
+        <p>一键生成带 IP 水印的 PDF；复制文字摘要粘到工单；打开网页版完整交互报告</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">告警</span>
+      <div>
+        <strong>被动 Badge 提醒</strong>
+        <p>页面出现接口异常或 JS 报错时，扩展图标自动显示红/琥珀色角标计数</p>
+      </div>
+    </li>
+    <li>
+      <span class="feat-tag">检测</span>
+      <div>
+        <strong>域名 Ping 实测</strong>
+        <p>对页面涉及的每个 API 域名发送探测请求，实测 RTT 和连通性</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- ════════ Privacy ════════ -->
+<section>
+  <h2>隐私承诺：<em>零数据上传</em></h2>
+  <div class="privacy-bar">
+    <h3>Judge 是一个纯本地工具</h3>
+    <div class="priv-items">
+      <span>所有分析在浏览器本地完成</span>
+      <span>不向任何服务器发送数据</span>
+      <span>不读 cookie / localStorage</span>
+      <span>不记录密码框内容</span>
+      <span>关闭标签页数据立即释放</span>
+      <span>没有任何埋点或遥测</span>
+      <span>代码完全开源可审查</span>
+      <span>Manifest V3 沙箱化运行</span>
+    </div>
+    <p style="text-align:center; margin-top:20px; font-size:13px; color:var(--slate-500);">
+      <a href="docs/store/privacy-policy.html" style="color:var(--indigo);">查看完整隐私政策</a>
+    </p>
+  </div>
+</section>
+
+<!-- ════════ Footer ════════ -->
+<div class="footer">
+  <div class="links">
+    <a href="https://github.com/kary2999/WebJudge">GitHub</a>
+    <a href="docs/store/privacy-policy.html">隐私政策</a>
+    <a href="mailto:kary372022@gmail.com">联系开发者</a>
+  </div>
+  <p>Judge 是个独立维护的小项目，不收集你任何数据，只是想让"系统好慢啊"这种工单变得可定位。</p>
+  <p style="margin-top:8px;">Made with care by an indie developer &middot; kary372022@gmail.com</p>
+</div>
+
+</body>
+</html>
